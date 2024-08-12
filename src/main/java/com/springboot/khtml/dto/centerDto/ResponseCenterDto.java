@@ -8,7 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ResponseCenterDto {
-    private Long cid;
+    private Long id;
 
     private String region;
     private String district;

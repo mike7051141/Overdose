@@ -57,6 +57,9 @@ public class User implements UserDetails {
 
     private LocalDateTime update_At;
 
+    @ManyToOne
+    @JoinColumn(name = "center_id")
+    private Center center;
 
     @ElementCollection
     @Builder.Default

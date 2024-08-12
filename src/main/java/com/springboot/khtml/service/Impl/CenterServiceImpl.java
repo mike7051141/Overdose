@@ -29,7 +29,7 @@ public class CenterServiceImpl implements CenterService {
 
         ResponseCenterDto responseCenterDto = new ResponseCenterDto();
         responseCenterDto.setCenter_name(center.getCenter_name());
-        responseCenterDto.setCid(center.getCid());
+        responseCenterDto.setId(center.getId());
         responseCenterDto.setRegion(center.getRegion());
         responseCenterDto.setDistrict(center.getDistrict());
         responseCenterDto.setDesignated_beds(center.getDesignated_beds());
@@ -48,7 +48,7 @@ public class CenterServiceImpl implements CenterService {
         List<ResponseCenterDto> responseCenterDtoList = new ArrayList<>();
         for (Center center : centerList) {
             ResponseCenterDto responseCenterDto = new ResponseCenterDto();
-            responseCenterDto.setCid(center.getCid());
+            responseCenterDto.setId(center.getId());
             responseCenterDto.setCenter_name(center.getCenter_name());
             responseCenterDto.setRegion(center.getRegion());
             responseCenterDto.setDistrict(center.getDistrict());
