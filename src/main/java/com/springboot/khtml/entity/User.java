@@ -61,7 +61,10 @@ public class User implements UserDetails {
     @JoinColumn(name = "center_id")
     private Center center;
 
-    @ElementCollection
+    @OneToMany(mappedBy = "user")
+    private List<AdmissionForm> admissionForms = new ArrayList<>();
+
+    @ElementCollection(fetch = FetchType.EAGER)
     @Builder.Default
     private List<String> roles = new ArrayList<>(List.of("MEMBER"));
 
@@ -70,11 +73,6 @@ public class User implements UserDetails {
         return roles.stream()
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
-    }
-
-    @Override
-    public String getPassword() {
-        return null;
     }
 
     @Override

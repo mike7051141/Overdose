@@ -19,6 +19,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -129,6 +130,8 @@ public class AuthServiceImpl implements AuthService {
                     .gender(kakaoUserInfoResponse.getGender())
                     .birthYear(kakaoUserInfoResponse.getBirthYear())
                     .profileUrl(kakaoUserInfoResponse.getProfileUrl())
+                    .create_At(LocalDateTime.now())
+                    .roles(List.of("ROLE_USER")) // roles 필드 설정
                     .create_At(LocalDateTime.now())
                     .build();
 

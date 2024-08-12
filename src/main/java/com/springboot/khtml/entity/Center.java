@@ -28,4 +28,7 @@ public class Center {
 
     @OneToMany(mappedBy = "center")
     private List<User> users = new ArrayList<>();
+
+    @OneToMany(mappedBy = "center")
+    private List<AdmissionForm> admissionForms = new ArrayList<>();
 }

@@ -100,7 +100,8 @@ public class SignServiceImpl implements SignService {
         if(partialUser != null){
             partialUser.setPassword(passwordEncoder.encode(signUpFirstDto.getPassword()));
             partialUser.setPasswordCheck(passwordEncoder.encode(signUpFirstDto.getPasswordCheck()));
-
+            logger.info("[partialUser] : {}", partialUser.getPassword());
+            logger.info("[partialUser] : {}", partialUser.getPasswordCheck());
             request.getSession().setAttribute("partialUser",partialUser);
             resultDto.setDetailMessage("다음 단계로 넘어가세요.");
             setSuccess(resultDto);
@@ -139,8 +140,14 @@ public class SignServiceImpl implements SignService {
     @Override
     public ResultDto SignIn(String email, String password) {
         // 로그인 로직
-        User user = userRepository.getByEmail(email);
-        if (!passwordEncoder.matches(password, user.getPassword())) {
+        User user = userRepository.findByEmail(email);
+        logger.info("[user] : {}", user);
+        logger.info("[user] : {}", user.getPassword());
+
+        if (user == null || !passwordEncoder.matches(password, user.getPassword())) {
+            logger.info("[password] : {}", password);
+            logger.info("[password] : {}", user.getPassword());
+
             throw new RuntimeException("Invalid credentials");
         }
         logger.info("[getSignInResult] 패스워드 일치");
