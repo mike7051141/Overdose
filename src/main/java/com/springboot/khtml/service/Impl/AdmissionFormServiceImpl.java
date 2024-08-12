@@ -13,6 +13,7 @@ import com.springboot.khtml.repository.CenterRepository;
 import com.springboot.khtml.repository.UserRepository;
 import com.springboot.khtml.service.AdmissionFormService;
 import lombok.RequiredArgsConstructor;
+import lombok.Value;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
@@ -47,19 +48,20 @@ public class AdmissionFormServiceImpl implements AdmissionFormService {
     public ResultDto saveAdmission(AdmissionFormDto admissionFormDto, HttpServletRequest request) {
         String info = jwtProvider.getUsername(request.getHeader("X-AUTH-TOKEN"));
         User user = userRepository.getByEmail(info);
+
         Center center = (Center)request.getSession().getAttribute("partialCenter");
         ResultDto resultDto = new ResultDto();
 
+
         if(user != null ){
-        AdmissionForm admissionForm = AdmissionForm.builder()
-                .guardianName(admissionFormDto.getGuardianName())
-                .phoneNum(admissionFormDto.getPhoneNum())
-                .healthInfo(admissionFormDto.getHealthInfo())
-                .rehabilitationHistory(admissionFormDto.getRehabilitationHistory())
-                .otherRequests(admissionFormDto.getOtherRequests())
-                .user(user)
-                .center(center)
-                .build();
+        AdmissionForm admissionForm = new AdmissionForm();
+        admissionForm.setRehabilitationHistory(admissionFormDto.getRehabilitationHistory());
+        admissionForm.setGuardianName(admissionFormDto.getGuardianName());
+        admissionForm.setPhoneNum(admissionFormDto.getPhoneNum());
+        admissionForm.setHealthInfo(admissionFormDto.getHealthInfo());
+        admissionForm.setOtherRequests(admissionFormDto.getOtherRequests());
+        admissionForm.setCenter(center);
+        admissionForm.setUser(user);
         admissionDao.save(admissionForm);
         setSuccess(resultDto);
 

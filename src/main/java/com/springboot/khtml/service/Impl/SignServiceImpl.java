@@ -27,6 +27,7 @@ import javax.mail.internet.MimeMessage;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -127,6 +128,7 @@ public class SignServiceImpl implements SignService {
             partialUser.setAddress(address);
             partialUser.setNickName(nickName);
             partialUser.setProfileUrl(imageUrl);
+            partialUser.setCreate_At(LocalDateTime.now());
 
             resultDto.setDetailMessage("다음 단계로 넘어가세요.");
             setSuccess(resultDto);
