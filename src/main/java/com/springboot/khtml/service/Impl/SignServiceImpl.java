@@ -93,11 +93,7 @@ public class SignServiceImpl implements SignService {
             return resultDto;
         }
 
-        if (!signUpFirstDto.getPassword().equals(signUpFirstDto.getPasswordCheck())) {
-            resultDto.setDetailMessage("비밀번호가 일치하지 않습니다.");
-            setFail(resultDto);
-            return resultDto;
-        }
+
         if(partialUser != null){
             partialUser.setPassword(passwordEncoder.encode(signUpFirstDto.getPassword()));
             partialUser.setPasswordCheck(passwordEncoder.encode(signUpFirstDto.getPasswordCheck()));
