@@ -15,7 +15,8 @@ import javax.servlet.http.HttpServletRequest;
 @RequestMapping("/api/v1")
 @Slf4j
 @RequiredArgsConstructor
-public class CenterController {
+public class
+CenterController {
 
     private final CenterService centerService;
 

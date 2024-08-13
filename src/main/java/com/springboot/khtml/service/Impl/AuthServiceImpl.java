@@ -62,21 +62,33 @@ public class AuthServiceImpl implements AuthService {
         HttpEntity<MultiValueMap<String, String>> kakaoTokenRequest = new HttpEntity<>(params, httpHeaders);
 
         try {
+            // 1. 카카오에 요청을 보내 엑세스 토큰을 받음
             ResponseEntity<String> response = restTemplate.exchange(
                     kakaoAccessTokenUrl,
                     HttpMethod.POST,
                     kakaoTokenRequest,
                     String.class
             );
-            log.info("[kakao login] authorizecode issued successfully");
+            log.info("[response] : {}",response);
+
             Map<String, Object> responseMap = objectMapper.readValue(response.getBody(), new TypeReference<Map<String, Object>>() {});
-            return ResponseEntity.ok(responseMap);
+            log.info("[responseMap] : {}",responseMap);
+
+            // 2. 엑세스 토큰 추출
+            String accessToken = (String) responseMap.get("access_token");
+
+            // 3. 엑세스 토큰을 사용하여 로그인 처리 및 JWT 생성
+            SignInResultDto signInResultDto = kakao_SignIn(accessToken);
+
+            // 4. JWT를 포함한 결과를 JSON으로 반환
+            return ResponseEntity.ok(signInResultDto);
 
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to get Kakao access token");
         }
     }
+
 
     private KakaoResponseDto getInfo(String accessToken) {
         RestTemplate restTemplate = new RestTemplate();

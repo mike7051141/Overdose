@@ -22,20 +22,8 @@ import java.util.Map;
 @Slf4j
 @RequiredArgsConstructor
 public class SignController {
-    private final AuthService authService;
     private final SignService signService;
 
-    @GetMapping("/kakao/callback")
-    public ResponseEntity<?> getKakaoAuthorizeCode(@RequestParam("code") String authorizeCode){
-        log.info("[kakao-login] authorizeCode {}", authorizeCode);
-        return authService.getKakaoUserInfo(authorizeCode);
-    }
-
-    @PostMapping("/kakao/signin")
-    public SignInResultDto kakao_SignIn(@RequestParam String accessToken){
-        log.info("[kakao-login] accessToken {}", accessToken);
-        return authService.kakao_SignIn(accessToken);
-    }
     @PostMapping("/send-email")
     public ResponseEntity<Map<String,String>> sendSimpleMessage(String email, HttpServletRequest request) throws Exception{
         Map<String,String> response = signService.sendSimpleMessage(email,request);
