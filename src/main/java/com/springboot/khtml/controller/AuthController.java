@@ -29,9 +29,9 @@ public class AuthController {
         return authService.getKakaoUserInfo(code);
     }
 
-    @PostMapping("/kakao/signin")
-    public SignInResultDto kakao_SignIn(@RequestParam String accessToken){
-        log.info("[kakao-login] accessToken {}", accessToken);
-        return authService.kakao_SignIn(accessToken);
-    }
+//    @PostMapping("/kakao/signin")
+//    public SignInResultDto kakao_SignIn(@RequestParam String accessToken){
+//        log.info("[kakao-login] accessToken {}", accessToken);
+//        return authService.kakao_SignIn(accessToken);
+//    }
 }

@@ -9,6 +9,7 @@ import com.springboot.khtml.dto.signDto.ResultDto;
 import com.springboot.khtml.dto.signDto.SignInResultDto;
 import com.springboot.khtml.entity.User;
 import com.springboot.khtml.jwt.JwtProvider;
+import com.springboot.khtml.repository.UserRepository;
 import com.springboot.khtml.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,22 +30,17 @@ import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
-
-    private final JwtProvider jwtProvider;
-
-    private final AuthDao authDao;
-
     @Value("${kakao.client.id}")
     private String clientKey;
-
     @Value("${kakao.redirect.url}")
     private String redirectUrl;
-
     @Value("${kakao.accesstoken.url}")
     private String kakaoAccessTokenUrl;
-
     @Value("${kakao.userinfo.url}")
     private String kakaoUserInfoUrl;
+
+    private final UserRepository userRepository;
+    private final JwtProvider jwtTokenProvider;
 
     @Override
     public ResponseEntity<?> getKakaoUserInfo(String authorizeCode) {
@@ -78,7 +74,7 @@ public class AuthServiceImpl implements AuthService {
                 return ResponseEntity.status(401).body("Invalid Kakao login");
             }
             // 사용자 정보가 있다면 이메일을 기준으로 DB에서 사용자 찾기
-            User user = authDao.kakaoUserFind(kakaoUserInfo.getEmail());
+            User user = userRepository.findByEmail(kakaoUserInfo.getEmail());
             if (user == null) {
                 // 새로운 사용자는 DB에 저장
                 user = User.builder()
@@ -86,10 +82,10 @@ public class AuthServiceImpl implements AuthService {
                         .password("1") // 카카오 로그인에서는 비밀번호가 필요하지 않음
                         .roles(Collections.singletonList("ROLE_ADMIN")) // 기본 역할 설정
                         .build();
-                authDao.save(user);
+                userRepository.save(user);
                 return ResponseEntity.ok(accessToken);
             } else { // JWT 토큰 생성
-                String token = jwtProvider.createToken(user.getEmail(), user.getRoles());
+                String token = jwtTokenProvider.createToken(user.getEmail(), user.getRoles());
                 return ResponseEntity.ok(new ResultDto(true, 0, "Success", token));
             }
         }catch (Exception e){
@@ -132,18 +128,18 @@ public class AuthServiceImpl implements AuthService {
                     .email((String) kakaoAccount.get("email"))
                     .build();
             // User 엔티티를 생성하고 데이터베이스에 저장
-            User user = authDao.kakaoUserFind(requestSignUpDto.getEmail());
+            User user = userRepository.findByEmail(requestSignUpDto.getEmail());
             if (user == null) {
                 user = User.builder()
                         .email(requestSignUpDto.getEmail())
                         .password("1") // 카카오 로그인에서는 비밀번호가 필요하지 않음
                         .roles(Collections.singletonList("ROLE_ADMIN")) // 기본 역할 설정
                         .build();
-                authDao.save(user);
+                userRepository.save(user);
             } else {
                 // 기존 사용자의 정보 업데이트 (필요시)
                 user.setEmail(requestSignUpDto.getEmail());
-                authDao.save(user);
+                userRepository.save(user);
             }
 
             return requestSignUpDto;
@@ -151,54 +147,5 @@ public class AuthServiceImpl implements AuthService {
             e.printStackTrace();
             return null;
         }
-    }
-
-    @Override
-    public SignInResultDto kakao_SignIn(String accessToken) {
-        KakaoResponseDto kakaoUserInfoResponse = getInfo(accessToken);
-
-        SignInResultDto signInResultDto = new SignInResultDto();
-        if (kakaoUserInfoResponse == null) {
-            setFail(signInResultDto);
-            throw new RuntimeException("Failed to get Kakao user info");
-        }
-
-        User user = authDao.kakaoUserFind(kakaoUserInfoResponse.getEmail());
-
-        if (user == null) {
-            User newUser = User.builder()
-                    .email(kakaoUserInfoResponse.getEmail())
-                    .userName(kakaoUserInfoResponse.getUserName())
-                    .phoneNumber(kakaoUserInfoResponse.getPhoneNumber())
-                    .gender(kakaoUserInfoResponse.getGender())
-                    .profileUrl(kakaoUserInfoResponse.getProfileUrl())
-                    .create_At(LocalDateTime.now())
-                    .roles(List.of("ROLE_USER")) // roles 필드 설정
-                    .update_At(LocalDateTime.now())
-                    .build();
-
-            authDao.KakaoUserSave(newUser);
-            user = newUser;
-            setSuccess(signInResultDto);
-            signInResultDto.setDetailMessage("회원가입 완료.");
-        }
-
-        signInResultDto.setToken(jwtProvider.createToken(user.getEmail(), List.of("ROLE_USER")));
-        setSuccess(signInResultDto);
-        signInResultDto.setDetailMessage("로그인 성공.");
-        log.info("[SignIn] SignInResultDto: {}", signInResultDto);
-
-        return signInResultDto;
-    }
-    private void setSuccess(ResultDto resultDto) {
-        resultDto.setSuccess(true);
-        resultDto.setCode(CommonResponse.SUCCESS.getCode());
-        resultDto.setMsg(CommonResponse.SUCCESS.getMsg());
-    }
-
-    private void setFail(ResultDto resultDto) {
-        resultDto.setSuccess(false);
-        resultDto.setCode(CommonResponse.Fail.getCode());
-        resultDto.setMsg(CommonResponse.Fail.getMsg());
     }
 }
