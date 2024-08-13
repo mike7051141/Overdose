@@ -2,6 +2,7 @@ package com.springboot.khtml.entity;
 
 
 import lombok.*;
+import org.springframework.data.annotation.Persistent;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -36,8 +37,6 @@ public class User implements UserDetails {
 
     private String email;
 
-    private String birthYear;
-
     private String gender;
 
     private String address;
@@ -46,9 +45,10 @@ public class User implements UserDetails {
 
     private String profileUrl;
 
-    private String confirmationCode;
-
     private boolean verified = false;
+
+    @Persistent
+    private String confirmationCode;
 
     @Transient
     private MultipartFile profile_image;
