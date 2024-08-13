@@ -128,11 +128,10 @@ public class AuthServiceImpl implements AuthService {
                     .userName(kakaoUserInfoResponse.getUserName())
                     .phoneNumber(kakaoUserInfoResponse.getPhoneNumber())
                     .gender(kakaoUserInfoResponse.getGender())
-                    .birthYear(kakaoUserInfoResponse.getBirthYear())
                     .profileUrl(kakaoUserInfoResponse.getProfileUrl())
                     .create_At(LocalDateTime.now())
                     .roles(List.of("ROLE_USER")) // roles 필드 설정
-                    .create_At(LocalDateTime.now())
+                    .update_At(LocalDateTime.now())
                     .build();
 
             authDao.KakaoUserSave(newUser);
