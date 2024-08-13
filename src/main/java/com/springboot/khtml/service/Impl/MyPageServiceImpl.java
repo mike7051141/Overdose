@@ -8,6 +8,7 @@ import com.springboot.khtml.jwt.JwtProvider;
 import com.springboot.khtml.repository.UserRepository;
 import com.springboot.khtml.service.MyPageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
@@ -19,6 +20,7 @@ public class MyPageServiceImpl implements MyPageService {
 
     private final UserRepository userRepository;
     private final JwtProvider jwtProvider;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public ResultDto updateUser(RequestMyPageDto requestMyPageDto, HttpServletRequest request) {
@@ -31,11 +33,11 @@ public class MyPageServiceImpl implements MyPageService {
             user.setNickName(requestMyPageDto.getNickName());
             user.setAddress(requestMyPageDto.getAddress());
             user.setGender(requestMyPageDto.getGender());
-            user.setPassword(requestMyPageDto.getPassword());
-            user.setPasswordCheck(requestMyPageDto.getPasswordCheck());
+            user.setPassword(passwordEncoder.encode(requestMyPageDto.getPassword()));
+            user.setPasswordCheck(passwordEncoder.encode(requestMyPageDto.getPasswordCheck()));
             user.setUpdate_At(LocalDateTime.now());
 
-            if (user.getPassword().equals(user.getPasswordCheck())) {
+            if (requestMyPageDto.getPassword().equals(requestMyPageDto.getPasswordCheck())) {
                 userRepository.save(user);
                 resultDto.setDetailMessage("회원정보 수정 완료!");
                 setSuccess(resultDto);
