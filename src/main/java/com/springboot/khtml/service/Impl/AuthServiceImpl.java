@@ -19,7 +19,6 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -30,65 +29,27 @@ import java.util.Map;
 public class AuthServiceImpl implements AuthService {
 
     private final JwtProvider jwtProvider;
-
     private final AuthDao authDao;
-
-    @Value("${kakao.client.id}")
-    private String clientKey;
-
-    @Value("${kakao.redirect.url}")
-    private String redirectUrl;
-
-    @Value("${kakao.accesstoken.url}")
-    private String kakaoAccessTokenUrl;
 
     @Value("${kakao.userinfo.url}")
     private String kakaoUserInfoUrl;
+
     @Override
-    public ResponseEntity<?> getKakaoUserInfo(String authorizeCode) {
-        log.info("[kakao login] issue a authorizeCode");
-        ObjectMapper objectMapper = new ObjectMapper(); //json 파싱 객체
-        RestTemplate restTemplate = new RestTemplate(); //client 연결 객체
-
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
-
-        MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-        params.add("grant_type", "authorization_code");
-        params.add("client_id", clientKey);
-        params.add("redirect_uri", redirectUrl);
-        params.add("code", authorizeCode);
-
-        HttpEntity<MultiValueMap<String, String>> kakaoTokenRequest = new HttpEntity<>(params, httpHeaders);
+    public ResponseEntity<?> getKakaoUserInfo(String accessToken) {
+        log.info("[Kakao login] Authenticate user using access token");
 
         try {
-            // 1. 카카오에 요청을 보내 엑세스 토큰을 받음
-            ResponseEntity<String> response = restTemplate.exchange(
-                    kakaoAccessTokenUrl,
-                    HttpMethod.POST,
-                    kakaoTokenRequest,
-                    String.class
-            );
-            log.info("[response] : {}",response);
-
-            Map<String, Object> responseMap = objectMapper.readValue(response.getBody(), new TypeReference<Map<String, Object>>() {});
-            log.info("[responseMap] : {}",responseMap);
-
-            // 2. 엑세스 토큰 추출
-            String accessToken = (String) responseMap.get("access_token");
-
-            // 3. 엑세스 토큰을 사용하여 로그인 처리 및 JWT 생성
+            // 1. 엑세스 토큰을 사용하여 로그인 처리 및 JWT 생성
             SignInResultDto signInResultDto = kakao_SignIn(accessToken);
 
-            // 4. JWT를 포함한 결과를 JSON으로 반환
+            // 2. JWT를 포함한 결과를 JSON으로 반환
             return ResponseEntity.ok(signInResultDto);
 
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to get Kakao access token");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to authenticate using Kakao access token");
         }
     }
-
 
     private KakaoResponseDto getInfo(String accessToken) {
         RestTemplate restTemplate = new RestTemplate();
@@ -159,6 +120,7 @@ public class AuthServiceImpl implements AuthService {
 
         return signInResultDto;
     }
+
     private void setSuccess(ResultDto resultDto) {
         resultDto.setSuccess(true);
         resultDto.setCode(CommonResponse.SUCCESS.getCode());
