@@ -41,7 +41,7 @@ public class CenterServiceImpl implements CenterService {
     @Override
     public ResponseCenterListDto getCenterList(int page, HttpServletRequest servletRequest) {
 
-        PageRequest pageRequest = PageRequest.of(page, 5);
+        PageRequest pageRequest = PageRequest.of(page, 6);
         Page<Center> centerPage = centerListDao.findCenterList(pageRequest);
         List<Center> centerList = centerPage.getContent();
 
