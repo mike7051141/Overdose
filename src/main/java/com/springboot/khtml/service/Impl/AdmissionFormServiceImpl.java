@@ -52,7 +52,6 @@ public class AdmissionFormServiceImpl implements AdmissionFormService {
         Center center = (Center)request.getSession().getAttribute("partialCenter");
         ResultDto resultDto = new ResultDto();
 
-
         if(user != null ){
         AdmissionForm admissionForm = new AdmissionForm();
         admissionForm.setRehabilitationHistory(admissionFormDto.getRehabilitationHistory());

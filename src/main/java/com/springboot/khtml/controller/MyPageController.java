@@ -28,4 +28,5 @@ public class MyPageController {
         ResultDto resultDto = myPageService.updateUser(requestMyPageDto, servletRequest);
         return ResponseEntity.status(HttpStatus.OK).body(resultDto);
     }
+
 }
