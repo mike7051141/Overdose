@@ -21,6 +21,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -44,14 +45,15 @@ public class AuthServiceImpl implements AuthService {
 
     @Value("${kakao.userinfo.url}")
     private String kakaoUserInfoUrl;
+
     @Override
     public ResponseEntity<?> getKakaoUserInfo(String authorizeCode) {
-        log.info("[kakao login] issue a authorizeCode");
-        ObjectMapper objectMapper = new ObjectMapper(); //json 파싱 객체
-        RestTemplate restTemplate = new RestTemplate(); //client 연결 객체
+        log.info("[kakao login] issue a authorizecode");
+        ObjectMapper objectMapper = new ObjectMapper(); // json 파싱해주는 객체
+        RestTemplate restTemplate = new RestTemplate(); // client 연결 객체
 
-        HttpHeaders httpHeaders = new HttpHeaders();
-        httpHeaders.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
 
         MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
         params.add("grant_type", "authorization_code");
@@ -59,63 +61,92 @@ public class AuthServiceImpl implements AuthService {
         params.add("redirect_uri", redirectUrl);
         params.add("code", authorizeCode);
 
-        HttpEntity<MultiValueMap<String, String>> kakaoTokenRequest = new HttpEntity<>(params, httpHeaders);
+        HttpEntity<MultiValueMap<String, String>> kakaoTokenRequest = new HttpEntity<>(params, headers);
 
-        try {
-            // 1. 카카오에 요청을 보내 엑세스 토큰을 받음
+        try{
             ResponseEntity<String> response = restTemplate.exchange(
                     kakaoAccessTokenUrl,
                     HttpMethod.POST,
                     kakaoTokenRequest,
                     String.class
             );
-            log.info("[response] : {}",response);
-
+            log.info("[kakao login] authorizecode issued successfully");
             Map<String, Object> responseMap = objectMapper.readValue(response.getBody(), new TypeReference<Map<String, Object>>() {});
-            log.info("[responseMap] : {}",responseMap);
-
-            // 2. 엑세스 토큰 추출
             String accessToken = (String) responseMap.get("access_token");
-
-            // 3. 엑세스 토큰을 사용하여 로그인 처리 및 JWT 생성
-            SignInResultDto signInResultDto = kakao_SignIn(accessToken);
-
-            // 4. JWT를 포함한 결과를 JSON으로 반환
-            return ResponseEntity.ok(signInResultDto);
-
-        } catch (Exception e) {
+            KakaoResponseDto kakaoUserInfo = getInfo(accessToken);
+            if (kakaoUserInfo == null) {
+                return ResponseEntity.status(401).body("Invalid Kakao login");
+            }
+            // 사용자 정보가 있다면 이메일을 기준으로 DB에서 사용자 찾기
+            User user = authDao.kakaoUserFind(kakaoUserInfo.getEmail());
+            if (user == null) {
+                // 새로운 사용자는 DB에 저장
+                user = User.builder()
+                        .email(kakaoUserInfo.getEmail())
+                        .password("1") // 카카오 로그인에서는 비밀번호가 필요하지 않음
+                        .roles(Collections.singletonList("ROLE_ADMIN")) // 기본 역할 설정
+                        .build();
+                authDao.save(user);
+                return ResponseEntity.ok(accessToken);
+            } else { // JWT 토큰 생성
+                String token = jwtProvider.createToken(user.getEmail(), user.getRoles());
+                return ResponseEntity.ok(new ResultDto(true, 0, "Success", token));
+            }
+        }catch (Exception e){
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to get Kakao access token");
+            return null;
         }
+
     }
-
-
     private KakaoResponseDto getInfo(String accessToken) {
         RestTemplate restTemplate = new RestTemplate();
-        ObjectMapper objectMapper = new ObjectMapper();
         HttpHeaders headers = new HttpHeaders();
+        ObjectMapper mapper = new ObjectMapper();
 
         headers.add("Authorization", "Bearer " + accessToken);
         headers.add("Content-type", "application/x-www-form-urlencoded;charset=utf-8");
 
         MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
+
         HttpEntity<?> entity = new HttpEntity<>(requestBody, headers);
-        ResponseEntity<String> response = restTemplate.exchange(kakaoUserInfoUrl, HttpMethod.POST, entity, String.class);
+
+        ResponseEntity<String> response = restTemplate.postForEntity(kakaoUserInfoUrl, entity, String.class);
 
         try {
-            Map<String, Object> responseMap = objectMapper.readValue(response.getBody(), new TypeReference<Map<String, Object>>() {});
+            Map<String, Object> responseMap = mapper.readValue(response.getBody(), new TypeReference<Map<String, Object>>() {});
             Map<String, Object> kakaoAccount = (Map<String, Object>) responseMap.get("kakao_account");
             Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
 
-            KakaoResponseDto responseDto = KakaoResponseDto.builder()
-                    .userName((String) kakaoAccount.get("name"))
-                    .phoneNumber((String) kakaoAccount.get("phone_number"))
-                    .email((String) kakaoAccount.get("email"))
-                    .gender((String) kakaoAccount.get("gender"))
-                    .profileUrl((String) profile.get("profile_image_url"))
-                    .build();
+            // Gender 변환 로직 추가
+            String gender = (String) kakaoAccount.get("gender");
+            String displayGender;
+            if ("female".equals(gender)) {
+                displayGender = "여자";
+            } else if ("male".equals(gender)) {
+                displayGender = "남자";
+            } else {
+                displayGender = "기타"; // 기본값 설정
+            }
 
-            return responseDto;
+            KakaoResponseDto requestSignUpDto = KakaoResponseDto.builder()
+                    .email((String) kakaoAccount.get("email"))
+                    .build();
+            // User 엔티티를 생성하고 데이터베이스에 저장
+            User user = authDao.kakaoUserFind(requestSignUpDto.getEmail());
+            if (user == null) {
+                user = User.builder()
+                        .email(requestSignUpDto.getEmail())
+                        .password("1") // 카카오 로그인에서는 비밀번호가 필요하지 않음
+                        .roles(Collections.singletonList("ROLE_ADMIN")) // 기본 역할 설정
+                        .build();
+                authDao.save(user);
+            } else {
+                // 기존 사용자의 정보 업데이트 (필요시)
+                user.setEmail(requestSignUpDto.getEmail());
+                authDao.save(user);
+            }
+
+            return requestSignUpDto;
         } catch (Exception e) {
             e.printStackTrace();
             return null;
